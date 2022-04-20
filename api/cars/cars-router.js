@@ -1,14 +1,14 @@
 // DO YOUR MAGIC
 const Car = require('./cars-model');
 const router = require('express').Router();
-const { checkCarId, checkCarPayload, checkVinNumberUnique, checkVinNumberValid } = require('./cars-middleware');
+const { checkCarPayload, checkVinNumberUnique, checkVinNumberValid } = require('./cars-middleware');
 
-router.get('/', (req, res next) => {
+router.get('/', (req, res) => {
     Car.getAll()
         .then(car => {
-            console.log("getAll");
+            res.json(car);
         })
-        .catch(err => {
+        .catch(() => {
             res.status(500).json({ message: '500 error getAll' });
         })
 })
@@ -17,24 +17,23 @@ router.get('/:id', (req, res) => {
     Car.getById(req.params.id)
         .then(car => {
             if (car) {
-                console.log('getById');
+                res.json(car);
             } else {
                 res.status(404).json({ message: 'Failed to retrieve car' });
             }
         })
-        .catch(err => {
+        .catch(() => {
             res.status(500).json({ message: '500 error getById' });
         });
 });
 
-  router.post('/', (req, res) => {
-    Car.create(req.body)
-        .then(car => {
-            console.log('create');
-        })
-        .catch(err => {
-            res.status(500).json({ message: '500 error create' });
-        });
-  });
+router.post('/', checkCarPayload, checkVinNumberValid, checkVinNumberUnique, async (req, res, next) => {
+    try {
+        const data = await Car.create(req.body);
+        res.status(201).json(data);
+    } catch(err) {
+        next(err)
+    }
+});
   
   module.exports = router;
